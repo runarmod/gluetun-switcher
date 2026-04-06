@@ -13,7 +13,7 @@ const api = {
             const response = await fetch(`/api/${endpoint}`, options);
             if (!response.ok) {
                 const err = await response.json();
-                throw new Error(err.error || `Erreur ${response.status}`);
+                throw new Error(err.error || `Error ${response.status}`);
             }
             // Handle responses that do not have a JSON body
             const contentType = response.headers.get("content-type");
@@ -447,13 +447,13 @@ async function fetchIpInfo(waitForChange = false) {
                 
                 // Use data from geolocation API properly
                 currentIpInfo = {
-                    ip: ipFromGeoApi || 'Non disponible',
-                    timezone: data.timezone || 'Non disponible',
+                    ip: ipFromGeoApi || 'Not available',
+                    timezone: data.timezone || 'Not available',
                     location: data.location,
                     latitude: lat || data.latitude || data.lat,
                     longitude: lon || data.longitude || data.lon || data.lng,
-                    country: data.country || data.country_name || 'Non disponible',
-                    city: data.city || 'Non disponible'
+                    country: data.country || data.country_name || 'Not available',
+                    city: data.city || 'Not available'
                 };
                 
                 console.log('DEBUG: Using geolocation API data:', currentIpInfo);
@@ -467,13 +467,13 @@ async function fetchIpInfo(waitForChange = false) {
     // Last resort: provide default values
     console.log('DEBUG: All APIs failed, using default values');
     currentIpInfo = {
-        ip: 'Non disponible',
-        timezone: 'Non disponible',
+        ip: 'Not available',
+        timezone: 'Not available',
         location: null,
         latitude: null,
         longitude: null,
-        country: 'Non disponible',
-        city: 'Non disponible'
+        country: 'Not available',
+        city: 'Not available'
     };
     
     return currentIpInfo;
@@ -498,7 +498,7 @@ async function checkCurrentConfig() {
                     <i class="fas fa-spinner fa-spin"></i>
                     <div class="current-config-text">
                         <h4>${location.flag} ${configInfo.name} (${translations.active})</h4>
-                        <p>Récupération des informations IP...</p>
+                        <p>Retrieving IP information...</p>
                     </div>
                 </div>
                 <div class="current-config-map">
@@ -515,13 +515,13 @@ async function checkCurrentConfig() {
             // Build the display with IP and timezone info
             let ipInfoHTML = '';
             if (ipInfo && (ipInfo.timezone || ipInfo.ip)) {
-                const timezone = ipInfo.timezone || 'Timezone non disponible';
-                const ipAddress = ipInfo.ip || 'IP non disponible';
+                const timezone = ipInfo.timezone || 'Timezone not available';
+                const ipAddress = ipInfo.ip || 'IP not available';
                 ipInfoHTML = `<p>${locationString} - ${timezone}</p><p><strong>IP: ${ipAddress}</strong></p>`;
                 console.log('DEBUG: IP info HTML built successfully');
             } else {
                 console.log('DEBUG: No IP info available, using defaults');
-                ipInfoHTML = `<p>${locationString} - Timezone non disponible</p><p><strong>IP: Non disponible</strong></p>`;
+                ipInfoHTML = `<p>${locationString} - Timezone not available</p><p><strong>IP: Not available</strong></p>`;
             }
             
             // Update the display with final info
@@ -589,7 +589,7 @@ async function initCurrentMap(locationInfo) {
         const data = currentIpInfo;
         if (!data) {
             console.log('DEBUG: No IP data available');
-            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Carte non disponible" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
+            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Map unavailable" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
             return;
         }
 
@@ -620,7 +620,7 @@ async function initCurrentMap(locationInfo) {
         if (lat == null || lon == null) {
             console.log('DEBUG: No valid coordinates found');
             // Show fallback image when coordinates are not available
-            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Carte non disponible" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
+            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Map unavailable" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
             return;
         }
 
@@ -629,7 +629,7 @@ async function initCurrentMap(locationInfo) {
         if (!window.maplibregl) {
             console.log('DEBUG: MapLibre not available');
             // Show fallback image when map library is not loaded
-            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Carte non disponible" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
+            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Map unavailable" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
             return;
         }
 
@@ -638,7 +638,7 @@ async function initCurrentMap(locationInfo) {
         if (!mapTileUrl) {
             console.log('DEBUG: No map tile URL configured');
             // Show fallback image when map tile URL is not configured
-            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Carte non disponible" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
+            mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Map unavailable" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
             return;
         }
 
@@ -664,9 +664,9 @@ async function initCurrentMap(locationInfo) {
         console.log('DEBUG: Map created successfully');
 
     } catch (error) {
-        console.error('Erreur initialisation carte:', error);
+        console.error('Map initialization error:', error);
         // Show fallback image when there's an error loading the map
-        mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Carte non disponible" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
+        mapContainer.innerHTML = `<div style="height: 100%; display: flex; align-items: center; justify-content: center;"><img src="icons/nondispo.jpg" alt="Map unavailable" style="max-width: 100%; max-height: 100%; border-radius: 8px;"></div>`;
     }
 }
 
@@ -738,7 +738,7 @@ async function executeActivation() {
             loadWireguardFiles();
             
             // Wait for IP change before updating the current config display
-            showNotification('Attente du changement d\'IP...', 'info');
+            showNotification('Waiting for IP change...', 'info');
             setTimeout(async () => {
                 await checkCurrentConfigWithIpWait();
             }, 2000); // Wait 2 seconds for VPN to stabilize first
@@ -773,7 +773,7 @@ async function checkCurrentConfigWithIpWait() {
                     <i class="fas fa-spinner fa-spin"></i>
                     <div class="current-config-text">
                         <h4>${location.flag} ${configInfo.name} (${translations.active})</h4>
-                        <p>Attente du changement d'IP...</p>
+                        <p>Waiting for IP change...</p>
                     </div>
                 </div>
                 <div class="current-config-map">
@@ -790,13 +790,13 @@ async function checkCurrentConfigWithIpWait() {
             // Build the display with IP and timezone info
             let ipInfoHTML = '';
             if (ipInfo && (ipInfo.timezone || ipInfo.ip)) {
-                const timezone = ipInfo.timezone || 'Timezone non disponible';
-                const ipAddress = ipInfo.ip || 'IP non disponible';
+                const timezone = ipInfo.timezone || 'Timezone not available';
+                const ipAddress = ipInfo.ip || 'IP not available';
                 ipInfoHTML = `<p>${locationString} - ${timezone}</p><p><strong>IP: ${ipAddress}</strong></p>`;
                 console.log('DEBUG: IP info HTML built successfully');
             } else {
                 console.log('DEBUG: No IP info available, using defaults');
-                ipInfoHTML = `<p>${locationString} - Timezone non disponible</p><p><strong>IP: Non disponible</strong></p>`;
+                ipInfoHTML = `<p>${locationString} - Timezone not available</p><p><strong>IP: Not available</strong></p>`;
             }
             
             // Update the display with final info
@@ -993,17 +993,17 @@ async function clearOperationHistory() {
             showNotification(translations.errorClearingHistory, 'error');
         }
     } catch (error) {
-        showNotification(`Erreur: ${error.message}`, 'error');
+        showNotification(`Error: ${error.message}`, 'error');
     }
 }
  
 // Global error handling
 window.addEventListener('error', (e) => {
-    console.error('Erreur JavaScript:', e.error);
+    console.error('JavaScript error:', e.error);
     showNotification(translations.unexpectedError, 'error');
 });
  
 window.addEventListener('unhandledrejection', (e) => {
-    console.error('Promise rejetée:', e.reason);
+    console.error('Unhandled promise rejection:', e.reason);
     showNotification(translations.rejectedPromise.replace('{reason}', e.reason.message || e.reason), 'error');
 });

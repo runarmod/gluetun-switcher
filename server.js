@@ -79,11 +79,11 @@ async function startServer() {
       try {
         records = await dns.lookup(parsed.host, { all: true, verbatim: true });
       } catch (dnsError) {
-        throw new Error(`Impossible de resoudre l'hote Endpoint '${parsed.host}' (ligne ${i + 1}): ${dnsError.message}`);
+        throw new Error(`Unable to resolve Endpoint host '${parsed.host}' (line ${i + 1}): ${dnsError.message}`);
       }
 
       if (!records || records.length === 0) {
-        throw new Error(`Aucune IP trouvee pour l'hote Endpoint '${parsed.host}' (ligne ${i + 1})`);
+        throw new Error(`No IP found for Endpoint host '${parsed.host}' (line ${i + 1})`);
       }
 
       const preferred = records.find(r => r.family === 4) || records[0];
@@ -309,7 +309,7 @@ app.get('/api/wireguard-files', async (req, res) => {
   if (!wireguardDir) {
     return res.status(500).json({
       success: false,
-      error: "La variable d'environnement WIREGUARD_DIR n'est pas configurée sur le serveur."
+      error: "The WIREGUARD_DIR environment variable is not configured on the server."
     });
   }
 
@@ -325,7 +325,7 @@ app.get('/api/wireguard-files', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: `Erreur lors de la lecture du répertoire ${wireguardDir}: ${error.message}`
+      error: `Error reading directory ${wireguardDir}: ${error.message}`
     });
   }
 });
@@ -453,7 +453,7 @@ app.get('/api/locations', async (req, res) => {
     console.error('Error in /api/locations:', error);
     res.status(500).json({
       success: false,
-      error: `Impossible de charger les données de localisation: ${error.message}`
+      error: `Failed to load location data: ${error.message}`
     });
   }
 });
@@ -528,7 +528,7 @@ app.post('/api/activate-config', async (req, res) => {
     console.error(`[ACTIVATE] Error during activation:`, error);
     res.status(500).json({
       success: false,
-      error: `Erreur lors de l'activation: ${error.message}`
+      error: `Error during activation: ${error.message}`
     });
   }
 });
@@ -543,7 +543,7 @@ app.get('/api/current-config-info', async (req, res) => {
   if (!wireguardDir) {
     return res.status(500).json({
       success: false,
-      error: "La variable d'environnement WIREGUARD_DIR n'est pas configurée sur le serveur.",
+      error: "The WIREGUARD_DIR environment variable is not configured on the server.",
       reason: 'config_error'
     });
   }
@@ -572,7 +572,7 @@ app.get('/api/current-config-info', async (req, res) => {
     } else {
       res.status(500).json({
         success: false,
-        error: `Erreur lors de la lecture de wg0.conf: ${error.message}`,
+        error: `Error reading wg0.conf: ${error.message}`,
         reason: 'read_error'
       });
     }
