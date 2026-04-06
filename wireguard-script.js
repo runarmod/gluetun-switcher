@@ -279,7 +279,7 @@ function displayFileList() {
     }
     
     fileList.innerHTML = wireguardFiles.map(location => {
-        const { countryCode, countryNameKey, keywords = [], isAvailable, fileName, isCustom } = location;
+        const { countryCode, countryNameKey, keywords = [], fileName, isCustom } = location;
         const hasFlag = !!countryCode;
         const countryName = countryNameKey ? (translations[countryNameKey] || countryNameKey) : (translations.wireguardConfig || 'WireGuard Configuration');
         const city = keywords.length > 1 ? keywords[keywords.length - 1] : '';
@@ -289,24 +289,14 @@ function displayFileList() {
         const flag = hasFlag
             ? `<img src="config/flags/${countryCode}.svg" class="country-flag" alt="${countryName}" title="${countryName}">`
             : '';
-        const statusClass = isAvailable ? 'status-available' : 'status-unavailable';
-        const statusText = isAvailable ? translations.available : translations.unavailable;
-        const clickHandler = isAvailable ? `onclick="selectFile('${fileName}')"` : '';
-        const itemClass = isAvailable ? 'file-item' : 'file-item disabled';
 
         return `
-        <div class="${itemClass}" data-file="${fileName || countryCode}" ${clickHandler}>
+        <div class="file-item" data-file="${fileName}" onclick="selectFile('${fileName}')">
             <div class="file-info">
-                <div class="file-icon">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
                 <div class="file-details">
                     <h4>${flag} ${fileName || countryName}</h4>
                     <p>${locationString}</p>
                 </div>
-            </div>
-            <div class="file-status">
-                <span class="status-badge ${statusClass}">${statusText}</span>
             </div>
         </div>
     `}).join('');

@@ -14,21 +14,28 @@
             border: 2px solid var(--border-color);
             border-radius: var(--border-radius);
             background: var(--white);
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 6px;
+            padding: 6px;
         }
         
         .file-item {
-            padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
+            padding: 5px 7px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
             cursor: pointer;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            width: calc(33.333% - 4px);
+            box-sizing: border-box;
         }
         
         .file-item:hover {
             background: var(--light-bg);
-            transform: translateX(5px);
+            transform: translateX(2px);
         }
         
         .file-item.selected {
@@ -36,61 +43,36 @@
             color: var(--white);
         }
         
-        .file-item:last-child {
-            border-bottom: none;
-        }
-        
         .file-info {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 0;
+            margin-top: 0;
+            padding: 0;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            width: 100%;
+            min-width: 0;
         }
-        
-        .file-icon {
-            width: 40px;
-            height: 40px;
-            background: var(--success-color);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--white);
-            font-size: 1.2rem;
-        }
-        
-        .file-item.selected .file-icon {
-            background: rgba(255, 255, 255, 0.2);
+
+        .file-details {
+            width: 100%;
+            min-width: 0;
         }
         
         .file-details h4 {
-            margin: 0 0 5px 0;
-            font-size: 1rem;
+            margin: 0 0 1px 0;
+            font-size: 0.82rem;
             font-weight: 600;
+            line-height: 1.2;
+            gap: 5px;
         }
         
         .file-details p {
             margin: 0;
-            font-size: 0.875rem;
+            font-size: 0.68rem;
             opacity: 0.8;
-        }
-        
-        .file-status {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 5px;
-        }
-        
-        .status-badge {
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 500;
-        }
-        
-        .status-available {
-            background: var(--success-color);
-            color: var(--white);
         }
         
         .status-current {
@@ -99,7 +81,14 @@
         }
         
         .refresh-btn {
-            margin-bottom: 15px;
+            margin-bottom: 0;
+            min-width: auto;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+        }
+
+        .configs-card-body {
+            padding: 6px;
         }
         
         .no-files {
@@ -107,6 +96,19 @@
             padding: 40px 20px;
             color: var(--text-secondary);
             font-style: italic;
+            width: 100%;
+        }
+
+        @media (max-width: 1200px) {
+            .file-item {
+                width: calc(50% - 3px);
+            }
+        }
+
+        @media (max-width: 760px) {
+            .file-item {
+                width: 100%;
+            }
         }
         
         .current-config {
@@ -342,15 +344,14 @@
             </div>
 
             <!-- List of available configurations -->
-            <div class="card">
+            <div class="card configs-card">
                 <div class="card-header">
                     <h2><i class="fas fa-list"></i> <span data-i18n="availableConfigs">Available Configurations</span></h2>
-                </div>
-                <div class="card-body">
                     <button id="refreshBtn" class="btn btn-secondary refresh-btn">
                         <i class="fas fa-sync-alt"></i> <span data-i18n="refreshList">Refresh List</span>
                     </button>
-                    
+                </div>
+                <div class="card-body configs-card-body">
                     <div id="fileList" class="file-list">
                         <div class="no-files">
                             <i class="fas fa-spinner fa-spin"></i> <span data-i18n="loadingFiles">Loading files...</span>
