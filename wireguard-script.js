@@ -319,9 +319,11 @@ function selectFile(fileName) {
 
 // Function to get current IP from any working API
 async function getCurrentIpOnly() {
+    const publicIpApiUrl = (mapConfig && mapConfig.publicIpApiUrl) || '/api/publicip';
+
     // Try primary API first
     try {
-        const response = await fetch('http://192.168.0.242:8000/v1/publicip/ip', {
+        const response = await fetch(publicIpApiUrl, {
             signal: AbortSignal.timeout(3000)
         });
         if (response.ok) {
@@ -377,6 +379,7 @@ async function waitForIpChange(expectedOldIp, maxWaitTime = 30000) {
 // Function to fetch IP information with smart waiting for VPN changes
 async function fetchIpInfo(waitForChange = false) {
     console.log('DEBUG: Starting fetchIpInfo(), waitForChange:', waitForChange);
+    const publicIpApiUrl = (mapConfig && mapConfig.publicIpApiUrl) || '/api/publicip';
     
     // If we're waiting for a change, do the smart waiting first
     if (waitForChange && lastKnownIp) {
@@ -395,9 +398,9 @@ async function fetchIpInfo(waitForChange = false) {
     
     // Try the primary API first
     try {
-        console.log('DEBUG: Trying primary API: http://192.168.0.242:8000/v1/publicip/ip');
+        console.log('DEBUG: Trying primary API:', publicIpApiUrl);
         
-        const response = await fetch('http://192.168.0.242:8000/v1/publicip/ip', {
+        const response = await fetch(publicIpApiUrl, {
             signal: AbortSignal.timeout(8000)
         });
         

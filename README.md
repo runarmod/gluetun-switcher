@@ -56,6 +56,10 @@ services:
       - WIREGUARD_DIR=/etc/wireguard
       - NODE_ENV=production
       - CONTAINER_TO_RESTART=gluetun,qBittorrent
+      # Optional: override how the app reaches Gluetun public IP API
+      # - GLUETUN_PUBLICIP_API_URL=http://gluetun:8000/v1/publicip/ip
+      # - GLUETUN_HOST=gluetun
+      # - GLUETUN_PUBLICIP_PORT=8000
       - TZ=Europe/Paris
     volumes:
       # For application configuration & history persistence
@@ -94,6 +98,13 @@ docker run -d \
   -v /var/run/docker.sock:/var/run/docker.sock \
   ghcr.io/fuzzzor/gluetun-switcher:latest
 ```
+
+Optional Gluetun public IP env vars can be added to the command if needed:
+
+- `-e GLUETUN_PUBLICIP_API_URL="http://gluetun:8000/v1/publicip/ip"`
+- `-e GLUETUN_HOST="gluetun"`
+- `-e GLUETUN_PUBLICIP_PORT="8000"`
+
 Select your own volume !
 ---
 
@@ -147,6 +158,26 @@ The following environment variables are required to enable the new authenticatio
 - `WIREGUARD_DIR`: (Required) The path *inside the container* where your `.conf` files are located. This path must match the destination of the volume you mount.
 - `CONTAINER_TO_RESTART`: (Required) The name(s) of the Docker container(s) to restart after a configuration change. Separate names with a comma (e.g., `gluetun,qbittorrent`).
 - `TZ`: (Optional) The timezone to use for timestamps in the history (e.g., `Europe/Paris`).
+
+### Gluetun Public IP API (Optional)
+
+The UI reads public IP information through backend proxy endpoints (`/api/publicip` and `/api/geolocation`).
+
+By default, the app assumes Gluetun is reachable in the same Docker network using service name `gluetun` on port `8000`:
+
+- Default target: `http://gluetun:8000/v1/publicip/ip`
+
+You can override this with the following environment variables:
+
+- `GLUETUN_PUBLICIP_API_URL`: Full URL to Gluetun public IP endpoint (highest priority).
+- `GLUETUN_HOST`: Hostname/IP of the Gluetun container (used when `GLUETUN_PUBLICIP_API_URL` is not set).
+- `GLUETUN_IP`: Alias fallback for `GLUETUN_HOST`.
+- `GLUETUN_PUBLICIP_PORT`: Port for Gluetun public IP endpoint (default: `8000`).
+
+Resolution order used by the server:
+
+1. `GLUETUN_PUBLICIP_API_URL`
+2. `http://${GLUETUN_HOST || GLUETUN_IP || 'gluetun'}:${GLUETUN_PUBLICIP_PORT || 8000}/v1/publicip/ip`
 
 ### Volumes
 

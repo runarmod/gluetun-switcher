@@ -19,6 +19,15 @@ async function startServer() {
   const historyPath = path.join(__dirname, 'config', 'history', 'history.json');
   const statePath = path.join(__dirname, 'config', 'state.json');
 
+  const resolveGluetunPublicIpUrl = () => {
+    if (process.env.GLUETUN_PUBLICIP_API_URL) {
+      return process.env.GLUETUN_PUBLICIP_API_URL;
+    }
+    const gluetunHost = process.env.GLUETUN_HOST || process.env.GLUETUN_IP || 'gluetun';
+    const gluetunPort = process.env.GLUETUN_PUBLICIP_PORT || '8000';
+    return `http://${gluetunHost}:${gluetunPort}/v1/publicip/ip`;
+  };
+
 // Middlewares
 // CORS configuration: allow credentials so session cookies are accepted
 app.use(cors({
@@ -134,16 +143,39 @@ app.get('/api/config/map', (req, res) => {
   res.json({
     success: true,
     config: {
+      publicIpApiUrl: '/api/publicip',
       geolocationApiUrl: '/api/geolocation', // Use internal proxy endpoint
       mapTileUrl: process.env.MAP_TILE_URL || 'https://api.maptiler.com/maps/streets/style.json?key=demo_key'
     }
   });
 });
 
+// Proxy endpoint for Gluetun public IP API
+app.get('/api/publicip', async (req, res) => {
+  try {
+    const publicIpUrl = resolveGluetunPublicIpUrl();
+    const response = await fetch(publicIpUrl);
+
+    if (!response.ok) {
+      throw new Error(`API responded with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Public IP proxy error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch public IP data',
+      details: error.message
+    });
+  }
+});
+
 // Proxy endpoint for geolocation to avoid CORS issues
 app.get('/api/geolocation', async (req, res) => {
   try {
-    const geolocationUrl = process.env.GEOLOCATION_API_URL || 'http://localhost:8000/v1/publicip/ip';
+    const geolocationUrl = process.env.GEOLOCATION_API_URL || resolveGluetunPublicIpUrl();
     const response = await fetch(geolocationUrl);
     
     if (!response.ok) {
