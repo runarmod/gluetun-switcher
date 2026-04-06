@@ -279,11 +279,16 @@ function displayFileList() {
     }
     
     fileList.innerHTML = wireguardFiles.map(location => {
-        const { countryCode, countryNameKey, keywords, isAvailable, fileName } = location;
-        const countryName = translations[countryNameKey] || countryNameKey;
+        const { countryCode, countryNameKey, keywords = [], isAvailable, fileName, isCustom } = location;
+        const hasFlag = !!countryCode;
+        const countryName = countryNameKey ? (translations[countryNameKey] || countryNameKey) : (translations.wireguardConfig || 'WireGuard Configuration');
         const city = keywords.length > 1 ? keywords[keywords.length - 1] : '';
-        const locationString = city ? `${countryName}, ${city.charAt(0).toUpperCase() + city.slice(1)}` : countryName;
-        const flag = `<img src="config/flags/${countryCode}.svg" class="country-flag" alt="${countryName}" title="${countryName}">`;
+        const locationString = isCustom
+            ? (translations.wireguardConfig || 'WireGuard Configuration')
+            : (city ? `${countryName}, ${city.charAt(0).toUpperCase() + city.slice(1)}` : countryName);
+        const flag = hasFlag
+            ? `<img src="config/flags/${countryCode}.svg" class="country-flag" alt="${countryName}" title="${countryName}">`
+            : '';
         const statusClass = isAvailable ? 'status-available' : 'status-unavailable';
         const statusText = isAvailable ? translations.available : translations.unavailable;
         const clickHandler = isAvailable ? `onclick="selectFile('${fileName}')"` : '';

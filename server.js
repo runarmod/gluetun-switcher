@@ -236,7 +236,7 @@ app.get('/api/locations', async (req, res) => {
     if (wireguardDir) {
       try {
         const files = await fs.readdir(wireguardDir);
-        availableConfFiles = files.filter(file => file.endsWith('.conf'));
+        availableConfFiles = files.filter(file => file.endsWith('.conf') && file !== 'wg0.conf');
       } catch {
         // If directory doesn't exist, it's fine, no files are available.
         console.log(`WireGuard directory ${wireguardDir} not found, assuming no configs are available.`);
@@ -259,28 +259,88 @@ app.get('/api/locations', async (req, res) => {
 
     const locationsData = JSON.parse(await fs.readFile(locationsFile, 'utf8'));
 
-    // 3. Process and enrich locations
-    const enrichedLocations = Object.entries(locationsData).map(([countryCode, data]) => {
-      const hasEnoughKeywords = data.keywords && data.keywords.length >= 2;
-      let matchingFileName = null;
-      let isAvailable = false;
+    // 3. Build a matcher index from location metadata
+    const normalizedLocations = Object.entries(locationsData).map(([countryCode, data]) => ({
+      countryCode: String(countryCode || '').toLowerCase(),
+      countryNameKey: String(data.countryNameKey || '').toLowerCase(),
+      keywords: Array.isArray(data.keywords)
+        ? data.keywords.map(k => String(k || '').toLowerCase()).filter(Boolean)
+        : []
+    }));
 
-      if (hasEnoughKeywords) {
-        // Filename is expected to be based on the first keyword. e.g., "france" -> "france.conf"
-        const expectedFileName = `${data.keywords[0]}.conf`;
-        const foundFile = availableConfFiles.find(f => f.toLowerCase() === expectedFileName.toLowerCase());
-        if (foundFile) {
-          matchingFileName = foundFile;
-          isAvailable = true;
+    const sanitize = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, ' ');
+    const compact = (value) => sanitize(value).replace(/\s+/g, '');
+
+    const matchLocationForFile = (fileName) => {
+      const baseName = String(fileName || '').replace(/\.conf$/i, '').toLowerCase();
+      const tokens = sanitize(baseName).split(/\s+/).filter(Boolean);
+      const compactBaseName = compact(baseName);
+
+      let bestMatch = null;
+      let bestScore = 0;
+
+      for (const location of normalizedLocations) {
+        let score = 0;
+
+        if (location.countryCode) {
+          const compactCountryCode = compact(location.countryCode);
+          if (location.countryCode === baseName) score = Math.max(score, 120);
+          if (compactCountryCode && compactCountryCode === compactBaseName) score = Math.max(score, 118);
+          if (tokens.includes(location.countryCode)) score = Math.max(score, 90);
+        }
+
+        if (location.countryNameKey) {
+          const compactCountryNameKey = compact(location.countryNameKey);
+          if (location.countryNameKey === baseName) score = Math.max(score, 110);
+          if (compactCountryNameKey && compactCountryNameKey === compactBaseName) score = Math.max(score, 108);
+          if (tokens.includes(location.countryNameKey)) score = Math.max(score, 85);
+          if (baseName.includes(location.countryNameKey)) score = Math.max(score, 70);
+          if (compactCountryNameKey && compactBaseName.includes(compactCountryNameKey)) score = Math.max(score, 68);
+        }
+
+        for (const keyword of location.keywords) {
+          const compactKeyword = compact(keyword);
+          if (keyword === baseName) score = Math.max(score, 100);
+          if (compactKeyword && compactKeyword === compactBaseName) score = Math.max(score, 98);
+          if (tokens.includes(keyword)) score = Math.max(score, 80);
+          if (baseName.includes(keyword)) score = Math.max(score, 65);
+          if (compactKeyword && compactBaseName.includes(compactKeyword)) score = Math.max(score, 63);
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMatch = location;
         }
       }
 
+      return bestScore > 0 ? bestMatch : null;
+    };
+
+    // 4. Return one entry per real .conf file, with optional matched metadata
+    const enrichedLocations = availableConfFiles.map((fileName) => {
+      const matchedLocation = matchLocationForFile(fileName);
+      const fullPath = wireguardDir ? path.join(wireguardDir, fileName) : null;
+
+      if (!matchedLocation) {
+        return {
+          countryCode: null,
+          countryNameKey: null,
+          keywords: [],
+          isAvailable: true,
+          fullPath,
+          fileName,
+          isCustom: true
+        };
+      }
+
       return {
-        countryCode,
-        ...data,
-        isAvailable,
-        fullPath: isAvailable ? path.join(wireguardDir, matchingFileName) : null,
-        fileName: matchingFileName,
+        countryCode: matchedLocation.countryCode,
+        countryNameKey: matchedLocation.countryNameKey,
+        keywords: matchedLocation.keywords,
+        isAvailable: true,
+        fullPath,
+        fileName,
+        isCustom: false
       };
     });
 
