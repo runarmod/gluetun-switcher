@@ -4,12 +4,12 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs').promises;
+const dns = require('dns').promises;
+const net = require('net');
 const Docker = require('dockerode');
 const session = require('express-session');
 const authService = require('./auth/auth.service');
 const security = require('./security.config.js');
-const http = require('http');
-const https = require('https');
 
 const app = express();
 const port = 3003;
@@ -26,6 +26,77 @@ async function startServer() {
     const gluetunHost = process.env.GLUETUN_HOST || process.env.GLUETUN_IP || 'gluetun';
     const gluetunPort = process.env.GLUETUN_PUBLICIP_PORT || '8000';
     return `http://${gluetunHost}:${gluetunPort}/v1/publicip/ip`;
+  };
+
+  const splitEndpointHostPort = (endpointValue) => {
+    const value = String(endpointValue || '').trim();
+    if (!value) return null;
+
+    if (value.startsWith('[')) {
+      const closingBracket = value.indexOf(']');
+      if (closingBracket === -1) return null;
+      const host = value.slice(1, closingBracket);
+      const rest = value.slice(closingBracket + 1);
+      if (!rest.startsWith(':')) return null;
+      const port = rest.slice(1).trim();
+      if (!port) return null;
+      return { host, port };
+    }
+
+    const lastColon = value.lastIndexOf(':');
+    if (lastColon <= 0) return null;
+    const host = value.slice(0, lastColon).trim();
+    const port = value.slice(lastColon + 1).trim();
+    if (!host || !port) return null;
+    return { host, port };
+  };
+
+  const normalizeWireguardEndpoints = async (configText) => {
+    const endpointRegex = /^(\s*Endpoint\s*=\s*)([^\s#;]+)(.*)$/i;
+    const lines = String(configText || '').split(/\r?\n/);
+    let resolvedCount = 0;
+
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+      const match = line.match(endpointRegex);
+      if (!match) continue;
+
+      const prefix = match[1];
+      const endpointValue = match[2];
+      const suffix = match[3] || '';
+      const parsed = splitEndpointHostPort(endpointValue);
+
+      if (!parsed) {
+        throw new Error(`Endpoint invalide (ligne ${i + 1}): ${endpointValue}`);
+      }
+
+      const hostIpVersion = net.isIP(parsed.host);
+      if (hostIpVersion) {
+        continue;
+      }
+
+      let records;
+      try {
+        records = await dns.lookup(parsed.host, { all: true, verbatim: true });
+      } catch (dnsError) {
+        throw new Error(`Impossible de resoudre l'hote Endpoint '${parsed.host}' (ligne ${i + 1}): ${dnsError.message}`);
+      }
+
+      if (!records || records.length === 0) {
+        throw new Error(`Aucune IP trouvee pour l'hote Endpoint '${parsed.host}' (ligne ${i + 1})`);
+      }
+
+      const preferred = records.find(r => r.family === 4) || records[0];
+      const resolvedIp = preferred.address;
+      const resolvedHost = net.isIP(resolvedIp) === 6 ? `[${resolvedIp}]` : resolvedIp;
+      lines[i] = `${prefix}${resolvedHost}:${parsed.port}${suffix}`;
+      resolvedCount += 1;
+    }
+
+    return {
+      content: lines.join('\n'),
+      resolvedCount
+    };
   };
 
 // Middlewares
@@ -412,9 +483,11 @@ app.post('/api/activate-config', async (req, res) => {
     const wg0Path = path.join(wireguardDir, 'wg0.conf');
     const sourceName = path.basename(sourcePath);
 
-    console.log(`[ACTIVATE] Attempting to copy '${sourcePath}' to '${wg0Path}'`);
-    await fs.copyFile(sourcePath, wg0Path);
-    console.log(`[ACTIVATE] Copy successful.`);
+    console.log(`[ACTIVATE] Attempting to prepare '${sourcePath}' for '${wg0Path}'`);
+    const sourceContent = await fs.readFile(sourcePath, 'utf8');
+    const normalizedConfig = await normalizeWireguardEndpoints(sourceContent);
+    await fs.writeFile(wg0Path, normalizedConfig.content, 'utf8');
+    console.log(`[ACTIVATE] Config written successfully. Endpoint hostnames resolved: ${normalizedConfig.resolvedCount}`);
     await fs.writeFile(statePath, JSON.stringify({ activeConfigName: sourceName })); // Save the name of the activated file
 
     const restartResults = [];
